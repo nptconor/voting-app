@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
+import logo from "./logo.png";
 import "./index.css";
 
 const tasks = [
@@ -13,7 +14,7 @@ const tasks = [
   "Find and purchase the 'best' piece of art for under $20",
 ];
 
-const ADMIN_SECRET = 'avatar22';
+const ADMIN_SECRET = "your_secret_here";
 
 function tallyVotes(allVotes) {
   const taskTallies = Array(tasks.length).fill(null).map(() => ({}));
@@ -60,39 +61,22 @@ export default function ResultsPage() {
   const [adminMode, setAdminMode] = useState(false);
   const navigate = useNavigate();
 
-  const fetchVotes = async () => {
-    const { data, error } = await supabase.from("votes").select("*");
-    if (error) {
-      console.error("Failed to fetch votes:", error);
-      return;
-    }
-    const tallies = tallyVotes(data);
-    setTaskTallies(tallies);
-    const { taskWinners } = getWinners(tallies);
-    setTaskWinners(taskWinners);
-  };
-
   useEffect(() => {
-  async function fetchVotes() {
-    const { data, error } = await supabase.from("votes").select("*");
-    if (error) {
-      console.error("Failed to fetch votes:", error);
-      return;
+    async function fetchVotes() {
+      const { data, error } = await supabase.from("votes").select("*");
+      if (error) {
+        console.error("Failed to fetch votes:", error);
+        return;
+      }
+      const tallies = tallyVotes(data);
+      setTaskTallies(tallies);
+      const { taskWinners } = getWinners(tallies);
+      setTaskWinners(taskWinners);
     }
-    const tallies = tallyVotes(data);
-    setTaskTallies(tallies);
-    const { taskWinners, overallWinners } = getWinners(tallies);
-    setTaskWinners(taskWinners);
-    localStorage.setItem("overallWinners", JSON.stringify(overallWinners));
-  }
-  fetchVotes();
-}, []);
+    fetchVotes();
+  }, []);
 
   const revealNext = () => {
-    if (taskTallies.length === 0) {
-      alert("No votes submitted yet.");
-      return;
-    }
     if (currentTaskIndex < tasks.length - 1) {
       setCurrentTaskIndex((prev) => prev + 1);
     } else {
@@ -107,32 +91,23 @@ export default function ResultsPage() {
   };
 
   const clearVotes = async () => {
-  if (!window.confirm("Are you sure you want to clear all votes?")) return;
-  const { error } = await supabase.from("votes").delete().neq("voter_id", "");
-  if (error) {
-    console.error("Error clearing votes:", error);
-    alert("Failed to clear votes.");
-  } else {
-    alert("✅ Votes cleared!");
-    setTaskTallies([]);
-    setTaskWinners([]);
-    setCurrentTaskIndex(-1);
-    // Refetch fresh (empty) data
-    const { data, error } = await supabase.from("votes").select("*");
+    if (!window.confirm("Are you sure you want to clear all votes?")) return;
+    const { error } = await supabase.from("votes").delete().neq("voter_id", "");
     if (error) {
-      console.error("Failed to fetch votes:", error);
+      console.error("Error clearing votes:", error);
+      alert("Failed to clear votes.");
     } else {
-      const tallies = tallyVotes(data);
-      setTaskTallies(tallies);
-      const { taskWinners } = getWinners(tallies);
-      setTaskWinners(taskWinners);
+      alert("✅ Votes cleared!");
+      setTaskTallies([]);
+      setTaskWinners([]);
+      setCurrentTaskIndex(-1);
     }
-  }
-};
+  };
 
   return (
     <div className="relative p-4 max-w-4xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
+      <img src={logo} alt="Game Changer Clark Edition Logo" className="w-72 mx-auto mb-6" />
       <h1 className="text-4xl font-bold text-center mb-8 text-white text-stroke">RESULTS</h1>
 
       {currentTaskIndex >= 0 && taskTallies[currentTaskIndex] && (

@@ -1,7 +1,5 @@
 // VotingPage.jsx
 import React, { useState } from "react";
-import { supabase } from "./supabase";
-import logo from "./logo.png";
 import "./index.css";
 
 const tasks = [
@@ -13,74 +11,70 @@ const tasks = [
   "Find and purchase the 'best' piece of art for under $20",
 ];
 
-export default function VotingPage() {
-  const [votes, setVotes] = useState({});
-  const [submitted, setSubmitted] = useState(false);
+const participantsPerTask = [
+  ["Feinstein", "Grasek", "Dowski", "Bonaparte", "C Clark", "T Clark", "Nuzzi", "KJ Clark", "Keane", "Bica", "B Clark/Rush", "Gelabert", "P Clark", "Pritchard"],
+  ["Nuzzi", "T Clark", "Bica", "Bonaparte", "Keane", "Pritchard", "KJ Clark", "Feinstein", "P Clark", "B Clark/Rush", "C Clark", "Gelabert", "Grasek", "Dowski"],
+  ["C Clark", "Keane", "Bonaparte", "Feinstein", "Gelabert", "P Clark", "Grasek", "Pritchard", "KJ Clark", "Nuzzi", "B Clark/Rush", "Dowski", "Bica", "T Clark"],
+  ["Keane", "Grasek", "Gelabert", "Bonaparte", "P Clark", "Dowski", "B Clark/Rush", "Pritchard", "Nuzzi", "C Clark", "Feinstein", "KJ Clark", "T Clark", "Bica"],
+  ["Feinstein", "Keane", "T Clark", "Bica", "Gelabert", "C Clark", "Grasek", "Dowski", "Bonaparte", "Nuzzi", "P Clark", "Pritchard", "B Clark/Rush", "KJ Clark"],
+  ["B Clark/Rush", "Keane", "P Clark", "Dowski", "Grasek", "Bonaparte", "Feinstein", "Gelabert", "T Clark", "C Clark", "Bica", "Nuzzi", "KJ Clark", "Pritchard"],
+];
 
-  const handleVote = (taskIndex, name) => {
-    setVotes((prev) => ({ ...prev, [taskIndex]: name }));
+function VotingPage() {
+  const [currentTask, setCurrentTask] = useState(0);
+  const [votes, setVotes] = useState({});
+
+  const handleVote = (participant) => {
+    setVotes((prev) => ({ ...prev, [currentTask]: participant }));
   };
 
-  const handleSubmit = async () => {
-    const voterId = crypto.randomUUID();
-    const { error } = await supabase.from("votes").insert([
-      {
-        voter_id: voterId,
-        votes: votes,
-      },
-    ]);
-    if (error) {
-      console.error("Error submitting vote:", error);
-      alert("Failed to submit votes.");
+  const handleNext = () => {
+    if (currentTask < tasks.length - 1) {
+      setCurrentTask((prev) => prev + 1);
     } else {
-      setSubmitted(true);
+      const storedVotes = JSON.parse(localStorage.getItem("allVotes")) || [];
+      localStorage.setItem("allVotes", JSON.stringify([...storedVotes, votes]));
+
       alert("Thanks for voting! Please notify the host that you're done.");
-      window.scrollTo({ top: 0, behavior: "smooth" }); // ✅ Scroll to top
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-stripe font-special">
-        <img src={logo} alt="Game Changer Logo" className="w-72 mb-8" />
-        <h1 className="text-3xl font-bold text-white text-stroke mb-4">
-          Thanks for voting!
-        </h1>
-        <p className="text-white">Please notify the host that you're done.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto p-6 min-h-screen bg-stripe font-special text-black">
-      <img src={logo} alt="Game Changer Logo" className="w-72 mx-auto mb-8" />
-
-      {tasks.map((task, taskIndex) => (
-        <div
-          key={taskIndex}
-          className="mb-8 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg"
-        >
-          <h2 className="text-2xl font-bold mb-4 text-black">
-            {task.toUpperCase()}
-          </h2>
-          <input
-            type="text"
-            placeholder="Enter your vote..."
-            value={votes[taskIndex] || ""}
-            onChange={(e) => handleVote(taskIndex, e.target.value)}
-            className="w-full px-4 py-2 rounded border border-black"
-          />
+    <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
+      <div className="bg-stripe fixed inset-0 -z-10"></div>
+      <h1 className="text-4xl font-bold text-center mb-6 text-white text-stroke">CHALLENGE VOTING</h1>
+      <div className="bg-white p-6 rounded shadow-xl relative z-10">
+        <h2 className="text-2xl font-bold mb-4 text-white text-stroke text-center">
+          {tasks[currentTask].toUpperCase()}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto">
+          {participantsPerTask[currentTask].map((participant) => (
+            <div
+              key={participant}
+              onClick={() => handleVote(participant)}
+              className={
+                "cursor-pointer py-4 px-6 rounded-lg text-center font-bold text-2xl transition-all duration-200 uppercase shadow-xl relative z-10 " +
+                (votes[currentTask] === participant
+                  ? "border-4 border-yellow-500 scale-105 bg-yellow-100 text-black"
+                  : "border-4 border-black bg-white text-black hover:bg-yellow-100")
+              }
+            >
+              {participant}
+            </div>
+          ))}
         </div>
-      ))}
-
-      <div className="text-center mt-8">
+      </div>
+      <div className="text-center mt-4">
         <button
-          onClick={handleSubmit}
+          onClick={handleNext}
+          disabled={!votes[currentTask]}
           className="bg-white text-black px-6 py-3 rounded font-bold uppercase shadow"
         >
-          Submit Votes
+          {currentTask < tasks.length - 1 ? "VOTE & NEXT TASK" : "SUBMIT"}
         </button>
       </div>
     </div>
   );
 }
+
+export default VotingPage;

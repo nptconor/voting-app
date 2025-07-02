@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Special+Gothic+Condensed+One&display=swap');
+
+.font-special {
+  font-family: 'Special Gothic Condensed One', sans-serif;
+}
+
+.text-stroke {
+  -webkit-text-stroke: 1px black;
+  color: white;
+}
+
+.bg-stripe {
+  background: repeating-linear-gradient(
+    to bottom,
+    #fdf288 0%,
+    #fdf288 20%,
+    #ee9253 20%,
+    #ee9253 40%,
+    #eb4f43 40%,
+    #eb4f43 60%,
+    #96454b 60%,
+    #96454b 80%,
+    #738caa 80%,
+    #738caa 100%
+  );
+}
+
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}

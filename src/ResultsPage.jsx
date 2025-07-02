@@ -73,8 +73,20 @@ export default function ResultsPage() {
   };
 
   useEffect(() => {
-    fetchVotes();
-  }, []);
+  async function fetchVotes() {
+    const { data, error } = await supabase.from("votes").select("*");
+    if (error) {
+      console.error("Failed to fetch votes:", error);
+      return;
+    }
+    const tallies = tallyVotes(data);
+    setTaskTallies(tallies);
+    const { taskWinners, overallWinners } = getWinners(tallies);
+    setTaskWinners(taskWinners);
+    localStorage.setItem("overallWinners", JSON.stringify(overallWinners));
+  }
+  fetchVotes();
+}, []);
 
   const revealNext = () => {
     if (taskTallies.length === 0) {

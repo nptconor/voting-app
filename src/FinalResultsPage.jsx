@@ -10,13 +10,13 @@ const FinalResultsPage = ({ winner }) => {
   const [showConfetti, setShowConfetti] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 8000); // stop after 8 seconds
+    const timer = setTimeout(() => setShowConfetti(false), 200000);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="bg-stripe min-h-screen flex flex-col items-center justify-center text-center px-6">
-      {showConfetti && <Confetti width={width} height={height} numberOfPieces={500} />}
+      {showConfetti && <Confetti width={width} height={height} numberOfPieces={20000} />}
       <motion.img
         src={logo}
         alt="Logo"

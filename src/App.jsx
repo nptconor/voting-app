@@ -11,7 +11,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<VotingPage />} />
         <Route path="/results" element={<ResultsPage />} />
-        <Route path="/final" element={<FinalResultsPage />} />
+        <Route path="/final" element={<FinalResultsPage winner={overallWinner} />} />
       </Routes>
     </Router>
   );

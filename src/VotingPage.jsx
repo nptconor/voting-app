@@ -1,19 +1,10 @@
-// VotingPage.jsx
 import React, { useState, useEffect } from "react";
-import "./index.css";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import supabase from "./supabase";
 import logo from "./logo.png";
-import { supabase } from "./supabase";
 
 const tasks = [
-  "Wear the best 80s movie character costume",
-  "Take the best celebrity selfie",
-  "Get the standee to the coolest location",
-  "Learn and perform the best party trick",
-  "Create the coolest voicemail greeting",
-  "Find and purchase the 'best' piece of art for under $20",
-];
-
-const participantsPerTask = [
   ["Feinstein", "Grasek", "Dowski", "Bonaparte", "C Clark", "T Clark", "Nuzzi", "KJ Clark", "Keane", "Bica", "B Clark/Rush", "Gelabert", "P Clark", "Pritchard"],
   ["Nuzzi", "T Clark", "Bica", "Bonaparte", "Keane", "Pritchard", "KJ Clark", "Feinstein", "P Clark", "B Clark/Rush", "C Clark", "Gelabert", "Grasek", "Dowski"],
   ["C Clark", "Keane", "Bonaparte", "Feinstein", "Gelabert", "P Clark", "Grasek", "Pritchard", "KJ Clark", "Nuzzi", "B Clark/Rush", "Dowski", "Bica", "T Clark"],
@@ -22,103 +13,94 @@ const participantsPerTask = [
   ["B Clark/Rush", "Keane", "P Clark", "Dowski", "Grasek", "Bonaparte", "Feinstein", "Gelabert", "T Clark", "C Clark", "Bica", "Nuzzi", "KJ Clark", "Pritchard"],
 ];
 
-function VotingPage() {
-  const [currentTask, setCurrentTask] = useState(0);
-  const [votes, setVotes] = useState({});
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+export default function VotingPage() {
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+  const [votes, setVotes] = useState([]);
+  const [selected, setSelected] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
-    const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
-    const submitted = localStorage.getItem("hasSubmitted") === "true";
-
-    setVotes(savedVotes);
-    setCurrentTask(submitted ? tasks.length - 1 : savedTask);
-    setHasSubmitted(submitted);
+    const storedVotes = localStorage.getItem("votes");
+    if (storedVotes) setVotes(JSON.parse(storedVotes));
   }, []);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentTask]);
+  const handleSelect = (choice) => {
+    setSelected(choice);
+  };
 
-  const handleVote = (participant) => {
-    const updatedVotes = { ...votes, [currentTask]: participant };
-    setVotes(updatedVotes);
+  const handleSubmit = async () => {
+    if (!selected || submitting) return;
+    const updatedVotes = [...votes, selected];
     localStorage.setItem("votes", JSON.stringify(updatedVotes));
-    localStorage.setItem("currentTask", currentTask.toString());
-  };
 
-  const handleNext = async () => {
-    if (hasSubmitted) {
-      alert("You’ve already submitted your votes.");
-      return;
-    }
-
-    if (currentTask < tasks.length - 1) {
-      setCurrentTask((prev) => {
-        const next = prev + 1;
-        localStorage.setItem("currentTask", next.toString());
-        return next;
-      });
-    } else {
-      try {
-        const { error } = await supabase.from("votes").insert({
+    if (currentTaskIndex === tasks.length - 1) {
+      setSubmitting(true);
+      const { error } = await supabase.from("votes").insert([
+        {
           voter_id: crypto.randomUUID(),
-          votes,
-        });
-        if (error) throw error;
-
-        localStorage.removeItem("votes");
-        localStorage.removeItem("currentTask");
-        localStorage.setItem("hasSubmitted", "true");
-        setHasSubmitted(true);
-
-        alert("Thanks for voting! Please notify the host that you're done.");
-      } catch (err) {
-        console.error("Error submitting vote:", err);
-        alert("There was an error submitting your vote. Please try again.");
+          votes: updatedVotes,
+        },
+      ]);
+      setSubmitting(false);
+      localStorage.removeItem("votes");
+      if (error) {
+        console.error("Error submitting votes:", error);
+      } else {
+        navigate("/results");
       }
+    } else {
+      setVotes(updatedVotes);
+      setSelected("");
+      setCurrentTaskIndex((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  const taskOptions = tasks[currentTaskIndex];
 
   return (
-    <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
-      <div className="bg-stripe fixed inset-0 -z-10"></div>
-      <div className="flex justify-center mb-6">
-        <img src={logo} alt="Logo" className="h-44 md:h-56" />
+    <div className="min-h-screen bg-white text-black p-6">
+      <div className="flex justify-center mb-8">
+        <img src={logo} alt="Logo" className="w-64 md:w-80" />
       </div>
-      <div className="bg-white p-6 rounded shadow-xl relative z-10">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-black">
-          TASK: <span className="text-yellow-600">{tasks[currentTask]}</span>
+
+      <motion.div
+        key={currentTaskIndex}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -30 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h2 className="text-xl md:text-2xl font-bold text-center mb-6 tracking-widest text-gray-800">
+          TASK {currentTaskIndex + 1}
         </h2>
-        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-32">
-          {participantsPerTask[currentTask].map((participant) => (
-            <div
-              key={participant}
-              onClick={() => handleVote(participant)}
-              className={
-                "cursor-pointer py-4 px-6 rounded-lg text-center font-bold text-2xl transition-all duration-200 uppercase shadow-xl relative z-10 " +
-                (votes[currentTask] === participant
-                  ? "border-4 border-yellow-500 scale-105 bg-yellow-100 text-black"
-                  : "border-4 border-black bg-white text-black hover:bg-yellow-100")
-              }
+        <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+          {taskOptions.map((name, index) => (
+            <motion.button
+              key={index}
+              onClick={() => handleSelect(name)}
+              whileTap={{ scale: 0.97 }}
+              className={`p-4 rounded-xl border text-lg font-medium ${
+                selected === name
+                  ? "bg-black text-white border-black"
+                  : "bg-gray-100 text-gray-900 border-gray-300"
+              }`}
             >
-              {participant}
-            </div>
+              {name}
+            </motion.button>
           ))}
         </div>
-      </div>
-      <div className="text-center mt-8">
-        <button
-          onClick={handleNext}
-          disabled={!votes[currentTask] || hasSubmitted}
-          className="bg-white text-black px-6 py-3 rounded font-bold uppercase shadow"
-        >
-          {currentTask < tasks.length - 1 ? "VOTE & NEXT TASK" : "SUBMIT"}
-        </button>
-      </div>
+        <div className="mt-10 flex justify-center">
+          <button
+            disabled={!selected || submitting}
+            onClick={handleSubmit}
+            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl text-lg font-semibold shadow-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {currentTaskIndex === tasks.length - 1 ? "Submit Final Vote" : "Next Task"}
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }
-
-export default VotingPage;

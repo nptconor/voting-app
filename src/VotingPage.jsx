@@ -1,79 +1,124 @@
+// VotingPage.jsx
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import "./index.css";
 import logo from "./logo.png";
+import { supabase } from "./supabase";
 
-const VotingPage = () => {
-  const [votes, setVotes] = useState([]);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
+const tasks = [
+  "Wear the best 80s movie character costume",
+  "Take the best celebrity selfie",
+  "Get the standee to the coolest location",
+  "Learn and perform the best party trick",
+  "Create the coolest voicemail greeting",
+  "Find and purchase the 'best' piece of art for under $20",
+];
 
-  const tasks = [
-    ["Feinstein", "Grasek", "Dowski", "Bonaparte", "C Clark", "T Clark", "Nuzzi", "KJ Clark", "Keane", "Bica", "B Clark/Rush", "Gelabert", "P Clark", "Pritchard"],
-    ["Nuzzi", "T Clark", "Bica", "Bonaparte", "Keane", "Pritchard", "KJ Clark", "Feinstein", "P Clark", "B Clark/Rush", "C Clark", "Gelabert", "Grasek", "Dowski"],
-    ["C Clark", "Keane", "Bonaparte", "Feinstein", "Gelabert", "P Clark", "Grasek", "Pritchard", "KJ Clark", "Nuzzi", "B Clark/Rush", "Dowski", "Bica", "T Clark"],
-    ["Keane", "Grasek", "Gelabert", "Bonaparte", "P Clark", "Dowski", "B Clark/Rush", "Pritchard", "Nuzzi", "C Clark", "Feinstein", "KJ Clark", "T Clark", "Bica"],
-    ["Feinstein", "Keane", "T Clark", "Bica", "Gelabert", "C Clark", "Grasek", "Dowski", "Bonaparte", "Nuzzi", "P Clark", "Pritchard", "B Clark/Rush", "KJ Clark"],
-    ["B Clark/Rush", "Keane", "P Clark", "Dowski", "Grasek", "Bonaparte", "Feinstein", "Gelabert", "T Clark", "C Clark", "Bica", "Nuzzi", "KJ Clark", "Pritchard"]
-  ];
+const participantsPerTask = [
+  ["Feinstein", "Grasek", "Dowski", "Bonaparte", "C Clark", "T Clark", "Nuzzi", "KJ Clark", "Keane", "Bica", "B Clark/Rush", "Gelabert", "P Clark", "Pritchard"],
+  ["Nuzzi", "T Clark", "Bica", "Bonaparte", "Keane", "Pritchard", "KJ Clark", "Feinstein", "P Clark", "B Clark/Rush", "C Clark", "Gelabert", "Grasek", "Dowski"],
+  ["C Clark", "Keane", "Bonaparte", "Feinstein", "Gelabert", "P Clark", "Grasek", "Pritchard", "KJ Clark", "Nuzzi", "B Clark/Rush", "Dowski", "Bica", "T Clark"],
+  ["Keane", "Grasek", "Gelabert", "Bonaparte", "P Clark", "Dowski", "B Clark/Rush", "Pritchard", "Nuzzi", "C Clark", "Feinstein", "KJ Clark", "T Clark", "Bica"],
+  ["Feinstein", "Keane", "T Clark", "Bica", "Gelabert", "C Clark", "Grasek", "Dowski", "Bonaparte", "Nuzzi", "P Clark", "Pritchard", "B Clark/Rush", "KJ Clark"],
+  ["B Clark/Rush", "Keane", "P Clark", "Dowski", "Grasek", "Bonaparte", "Feinstein", "Gelabert", "T Clark", "C Clark", "Bica", "Nuzzi", "KJ Clark", "Pritchard"],
+];
 
-  const handleVote = (vote) => {
-    const newVotes = [...votes];
-    newVotes[currentTaskIndex] = vote;
-    setVotes(newVotes);
+function VotingPage() {
+  const [currentTask, setCurrentTask] = useState(0);
+  const [votes, setVotes] = useState({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  useEffect(() => {
+    const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
+    const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
+    const submitted = localStorage.getItem("hasSubmitted") === "true";
+
+    setVotes(savedVotes);
+    setCurrentTask(submitted ? tasks.length - 1 : savedTask);
+    setHasSubmitted(submitted);
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentTask]);
+
+  const handleVote = (participant) => {
+    const updatedVotes = { ...votes, [currentTask]: participant };
+    setVotes(updatedVotes);
+    localStorage.setItem("votes", JSON.stringify(updatedVotes));
+    localStorage.setItem("currentTask", currentTask.toString());
   };
 
-  const handleSubmit = async () => {
-    if (submitted) return;
-    setSubmitted(true);
+  const handleNext = async () => {
+    if (hasSubmitted) {
+      alert("You’ve already submitted your votes.");
+      return;
+    }
 
-    const supabaseUrl = "https://rdjikkoukowuxprmuyde.supabase.co";
-    const supabaseKey = "your_supabase_key_here";
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { error } = await supabase.from("votes").insert({
-      voter_id: crypto.randomUUID(),
-      votes,
-    });
-
-    if (error) {
-      console.error("Error submitting votes:", error);
+    if (currentTask < tasks.length - 1) {
+      setCurrentTask((prev) => {
+        const next = prev + 1;
+        localStorage.setItem("currentTask", next.toString());
+        return next;
+      });
     } else {
-      window.location.href = "/results";
+      try {
+        const { error } = await supabase.from("votes").insert({
+          voter_id: crypto.randomUUID(),
+          votes,
+        });
+        if (error) throw error;
+
+        localStorage.removeItem("votes");
+        localStorage.removeItem("currentTask");
+        localStorage.setItem("hasSubmitted", "true");
+        setHasSubmitted(true);
+
+        alert("Thanks for voting! Please notify the host that you're done.");
+      } catch (err) {
+        console.error("Error submitting vote:", err);
+        alert("There was an error submitting your vote. Please try again.");
+      }
     }
   };
 
   return (
-    <motion.div
-      className="voting-container"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <img src={logo} alt="Logo" style={{ maxWidth: "80%", margin: "0 auto", display: "block" }} />
-      <h2 style={{ textTransform: "uppercase", textAlign: "center", marginTop: "1rem" }}>
-        Task {currentTaskIndex + 1}
-      </h2>
-      <ul>
-        {tasks[currentTaskIndex].map((name, i) => (
-          <li key={i} onClick={() => handleVote(name)}>{name}</li>
-        ))}
-      </ul>
-      <div style={{ marginBottom: "60px" }} /> {/* space above button */}
-      <button
-        onClick={() => {
-          if (currentTaskIndex < tasks.length - 1) {
-            setCurrentTaskIndex(currentTaskIndex + 1);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          } else {
-            handleSubmit();
-          }
-        }}
-      >
-        {currentTaskIndex < tasks.length - 1 ? "Next Task" : "Submit Votes"}
-      </button>
-    </motion.div>
+    <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
+      <div className="bg-stripe fixed inset-0 -z-10"></div>
+      <div className="flex justify-center mb-6">
+        <img src={logo} alt="Logo" className="h-44 md:h-56" />
+      </div>
+      <div className="bg-white p-6 rounded shadow-xl relative z-10">
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-black">
+          TASK: <span className="text-yellow-600">{tasks[currentTask]}</span>
+        </h2>
+        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-32">
+          {participantsPerTask[currentTask].map((participant) => (
+            <div
+              key={participant}
+              onClick={() => handleVote(participant)}
+              className={
+                "cursor-pointer py-4 px-6 rounded-lg text-center font-bold text-2xl transition-all duration-200 uppercase shadow-xl relative z-10 " +
+                (votes[currentTask] === participant
+                  ? "border-4 border-yellow-500 scale-105 bg-yellow-100 text-black"
+                  : "border-4 border-black bg-white text-black hover:bg-yellow-100")
+              }
+            >
+              {participant}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="text-center mt-8">
+        <button
+          onClick={handleNext}
+          disabled={!votes[currentTask] || hasSubmitted}
+          className="bg-white text-black px-6 py-3 rounded font-bold uppercase shadow"
+        >
+          {currentTask < tasks.length - 1 ? "VOTE & NEXT TASK" : "SUBMIT"}
+        </button>
+      </div>
+    </div>
   );
-};
+}
 
 export default VotingPage;

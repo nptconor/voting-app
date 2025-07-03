@@ -27,15 +27,40 @@ function VotingPage() {
   const [votes, setVotes] = useState({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [submittedMessage, setSubmittedMessage] = useState(false);
+  const [voterId, setVoterId] = useState(null);
 
+  // Initialize or load voterId
   useEffect(() => {
-    const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
-    const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
-    const submitted = localStorage.getItem("hasSubmitted") === "true";
-    setVotes(savedVotes);
-    setCurrentTask(submitted ? tasks.length - 1 : savedTask);
-    setHasSubmitted(submitted);
+    let id = localStorage.getItem("voter_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("voter_id", id);
+    }
+    setVoterId(id);
   }, []);
+
+  // Check if this voter has already submitted
+  useEffect(() => {
+    const checkSubmission = async () => {
+      if (!voterId) return;
+      const { data, error } = await supabase
+        .from("votes")
+        .select("voter_id")
+        .eq("voter_id", voterId);
+
+      if (data && data.length > 0) {
+        setHasSubmitted(true);
+        setCurrentTask(tasks.length - 1);
+      } else {
+        const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
+        const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
+        setVotes(savedVotes);
+        setCurrentTask(savedTask);
+      }
+    };
+
+    checkSubmission();
+  }, [voterId]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -63,14 +88,13 @@ function VotingPage() {
     } else {
       try {
         const { error } = await supabase.from("votes").insert({
-          voter_id: crypto.randomUUID(),
+          voter_id: voterId,
           votes,
         });
         if (error) throw error;
 
         localStorage.removeItem("votes");
         localStorage.removeItem("currentTask");
-        localStorage.setItem("hasSubmitted", "true");
         setHasSubmitted(true);
         setSubmittedMessage(true);
       } catch (err) {

@@ -31,33 +31,31 @@ function VotingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let id = localStorage.getItem("voter_id");
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem("voter_id", id);
-    }
-    setVoterId(id);
-  }, []);
-
-  useEffect(() => {
-    const checkSubmission = async () => {
-      if (!voterId) return;
+    const init = async () => {
+      let id = localStorage.getItem("voter_id");
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("voter_id", id);
+      }
+      setVoterId(id);
 
       const { data, error } = await supabase
         .from("votes")
         .select("voter_id")
-        .eq("voter_id", voterId);
+        .eq("voter_id", id);
 
       if (error) {
-        console.error("Error checking submission:", error);
+        console.error("Supabase error:", error);
         setLoading(false);
         return;
       }
 
-      if (data && data.length > 0) {
+      if (data.length > 0) {
+        // already voted
         setHasSubmitted(true);
         setCurrentTask(tasks.length - 1);
       } else {
+        // hasn't voted yet
         const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
         const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
         setVotes(savedVotes);
@@ -67,8 +65,8 @@ function VotingPage() {
       setLoading(false);
     };
 
-    checkSubmission();
-  }, [voterId]);
+    init();
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -112,7 +110,13 @@ function VotingPage() {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stripe text-white">
+        <p className="text-xl">Loading...</p>
+      </div>
+    );
+  }
 
   if (submittedMessage) {
     return (

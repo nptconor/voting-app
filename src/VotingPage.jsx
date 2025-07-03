@@ -30,7 +30,6 @@ function VotingPage() {
   const [voterId, setVoterId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize or load voterId
   useEffect(() => {
     let id = localStorage.getItem("voter_id");
     if (!id) {
@@ -40,15 +39,20 @@ function VotingPage() {
     setVoterId(id);
   }, []);
 
-  // Check if this voter has already submitted
   useEffect(() => {
     const checkSubmission = async () => {
       if (!voterId) return;
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("votes")
         .select("voter_id")
         .eq("voter_id", voterId);
+
+      if (error) {
+        console.error("Error checking submission:", error);
+        setLoading(false);
+        return;
+      }
 
       if (data && data.length > 0) {
         setHasSubmitted(true);
@@ -59,6 +63,7 @@ function VotingPage() {
         setVotes(savedVotes);
         setCurrentTask(savedTask);
       }
+
       setLoading(false);
     };
 

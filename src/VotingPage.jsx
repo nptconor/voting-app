@@ -1,5 +1,5 @@
 // VotingPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./index.css";
 import logo from "./logo.png";
 import { supabase } from "./supabase";
@@ -26,6 +26,10 @@ function VotingPage() {
   const [currentTask, setCurrentTask] = useState(0);
   const [votes, setVotes] = useState({});
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentTask]);
+
   const handleVote = (participant) => {
     setVotes((prev) => ({ ...prev, [currentTask]: participant }));
   };
@@ -33,7 +37,6 @@ function VotingPage() {
   const handleNext = async () => {
     if (currentTask < tasks.length - 1) {
       setCurrentTask((prev) => prev + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       const storedVotes = JSON.parse(localStorage.getItem("allVotes")) || [];
       localStorage.setItem("allVotes", JSON.stringify([...storedVotes, votes]));
@@ -56,13 +59,13 @@ function VotingPage() {
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
       <div className="flex justify-center mb-6">
-  <img src={logo} alt="Logo" className="h-40 md:h-48" />
-</div>
+        <img src={logo} alt="Logo" className="h-28 md:h-36" />
+      </div>
       <div className="bg-white p-6 rounded shadow-xl relative z-10">
-      <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center bg-black text-white py-2 px-4 rounded">
-{tasks[currentTask].toUpperCase()}
-</h2>
-        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-4 text-white text-stroke text-center">
+          {tasks[currentTask].toUpperCase()}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-20">
           {participantsPerTask[currentTask].map((participant) => (
             <div
               key={participant}

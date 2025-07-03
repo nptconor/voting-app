@@ -27,31 +27,46 @@ function VotingPage() {
   const [votes, setVotes] = useState({});
 
   useEffect(() => {
+    const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
+    const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
+    setVotes(savedVotes);
+    setCurrentTask(savedTask);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentTask]);
 
   const handleVote = (participant) => {
-    setVotes((prev) => ({ ...prev, [currentTask]: participant }));
+    const updatedVotes = { ...votes, [currentTask]: participant };
+    setVotes(updatedVotes);
+    localStorage.setItem("votes", JSON.stringify(updatedVotes));
+    localStorage.setItem("currentTask", currentTask.toString());
   };
 
   const handleNext = async () => {
     if (currentTask < tasks.length - 1) {
-      setCurrentTask((prev) => prev + 1);
+      setCurrentTask((prev) => {
+        const next = prev + 1;
+        localStorage.setItem("currentTask", next.toString());
+        return next;
+      });
     } else {
-      const storedVotes = JSON.parse(localStorage.getItem("allVotes")) || [];
-      localStorage.setItem("allVotes", JSON.stringify([...storedVotes, votes]));
-
       try {
         const { error } = await supabase.from("votes").insert({
           voter_id: crypto.randomUUID(),
           votes,
         });
         if (error) throw error;
+
+        localStorage.removeItem("votes");
+        localStorage.removeItem("currentTask");
+
+        alert("Thanks for voting! Please notify the host that you're done.");
       } catch (err) {
         console.error("Error submitting vote:", err);
+        alert("There was an error submitting your vote. Please try again.");
       }
-
-      alert("Thanks for voting! Please notify the host that you're done.");
     }
   };
 
@@ -59,13 +74,13 @@ function VotingPage() {
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
       <div className="flex justify-center mb-6">
-  <img src={logo} alt="Logo" className="h-40 md:h-52" />
-</div>
-<div className="bg-white p-6 rounded shadow-xl relative z-10">
-  <h2 className="text-3xl md:text-4xl font-extrabold mb-6 text-center text-black drop-shadow-sm tracking-wide">
-    {tasks[currentTask].toUpperCase()}
-  </h2>
-        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-20">
+        <img src={logo} alt="Logo" className="h-36 md:h-44" />
+      </div>
+      <div className="bg-white p-6 rounded shadow-xl relative z-10">
+        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white text-stroke text-center">
+          {tasks[currentTask].toUpperCase()}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-24">
           {participantsPerTask[currentTask].map((participant) => (
             <div
               key={participant}

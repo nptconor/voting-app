@@ -29,7 +29,7 @@ function VotingPage() {
   const [submittedMessage, setSubmittedMessage] = useState(false);
   const [voterId, setVoterId] = useState(null);
 
-  // Initialize or load voterId
+  // Generate or load voter ID
   useEffect(() => {
     let id = localStorage.getItem("voter_id");
     if (!id) {
@@ -39,7 +39,7 @@ function VotingPage() {
     setVoterId(id);
   }, []);
 
-  // Check if this voter has already submitted
+  // Check Supabase to see if voter has already submitted
   useEffect(() => {
     const checkSubmission = async () => {
       if (!voterId) return;

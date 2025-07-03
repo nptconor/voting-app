@@ -10,6 +10,7 @@ const FinalResultsPage = () => {
   const { width, height } = useWindowSize();
   const [overallWinner, setOverallWinner] = useState(null);
   const [showConfetti, setShowConfetti] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 20000);
@@ -18,41 +19,44 @@ const FinalResultsPage = () => {
 
   useEffect(() => {
     const calculateWinner = async () => {
-      const { data: votesData, error } = await supabase.from("votes").select("votes");
-      if (error || !votesData) {
-        console.error("Error fetching votes:", error);
-        return;
-      }
+      try {
+        const { data: votesData, error } = await supabase.from("votes").select("votes");
+        if (error || !votesData) {
+          console.error("Error fetching votes:", error);
+          setLoading(false);
+          return;
+        }
 
-      const taskWinners = {};
+        const taskWinners = {};
 
-      // Tally votes per task
-      votesData.forEach(({ votes }) => {
-        Object.entries(votes).forEach(([taskIndex, participant]) => {
-          if (!taskWinners[taskIndex]) taskWinners[taskIndex] = {};
-          taskWinners[taskIndex][participant] = (taskWinners[taskIndex][participant] || 0) + 1;
+        votesData.forEach(({ votes }) => {
+          Object.entries(votes).forEach(([taskIndex, participant]) => {
+            if (!taskWinners[taskIndex]) taskWinners[taskIndex] = {};
+            taskWinners[taskIndex][participant] = (taskWinners[taskIndex][participant] || 0) + 1;
+          });
         });
-      });
 
-      // Determine winner for each task
-      const winnersByTask = Object.values(taskWinners).map((taskVoteMap) => {
-        return Object.entries(taskVoteMap).reduce((top, [name, count]) => {
+        const winnersByTask = Object.values(taskWinners).map((taskVoteMap) => {
+          return Object.entries(taskVoteMap).reduce((top, [name, count]) => {
+            return count > top.count ? { name, count } : top;
+          }, { name: null, count: 0 }).name;
+        });
+
+        const overallCounts = {};
+        winnersByTask.forEach((winner) => {
+          overallCounts[winner] = (overallCounts[winner] || 0) + 1;
+        });
+
+        const topWinner = Object.entries(overallCounts).reduce((top, [name, count]) => {
           return count > top.count ? { name, count } : top;
         }, { name: null, count: 0 }).name;
-      });
 
-      // Count wins
-      const overallCounts = {};
-      winnersByTask.forEach((winner) => {
-        overallCounts[winner] = (overallCounts[winner] || 0) + 1;
-      });
-
-      // Determine overall winner
-      const topWinner = Object.entries(overallCounts).reduce((top, [name, count]) => {
-        return count > top.count ? { name, count } : top;
-      }, { name: null, count: 0 }).name;
-
-      setOverallWinner(topWinner);
+        setOverallWinner(topWinner);
+      } catch (err) {
+        console.error("Error calculating winner:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     calculateWinner();
@@ -77,7 +81,10 @@ const FinalResultsPage = () => {
       >
         OVERALL WINNER
       </motion.h1>
-      {overallWinner && (
+
+      {loading ? (
+        <p className="text-2xl mt-4 text-white">Loading results...</p>
+      ) : overallWinner ? (
         <motion.p
           className="text-4xl md:text-5xl font-extrabold text-yellow-300 mt-6 drop-shadow-md"
           initial={{ opacity: 0, y: 40 }}
@@ -86,6 +93,8 @@ const FinalResultsPage = () => {
         >
           {overallWinner}
         </motion.p>
+      ) : (
+        <p className="text-xl mt-6 text-white">No winner data available.</p>
       )}
     </div>
   );

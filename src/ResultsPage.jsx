@@ -1,8 +1,8 @@
 // ResultsPage.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import logo from "./logo.png";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "./logo.png";
 
 const tasks = [
   "Wear the best 80s movie character costume",
@@ -13,112 +13,134 @@ const tasks = [
   "Find and purchase the 'best' piece of art for under $20",
 ];
 
-function ResultsPage() {
+const ResultsPage = () => {
   const [results, setResults] = useState([]);
-  const [currentTask, setCurrentTask] = useState(0);
-  const [admin, setAdmin] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+  const [adminMode, setAdminMode] = useState(false);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    fetchResults();
+    const fetchVotes = async () => {
+      const { data, error } = await supabase.from("votes").select();
+      if (error) {
+        console.error("Error fetching votes:", error);
+        return;
+      }
+
+      const voteCounts = tasks.map((_, taskIndex) => {
+        const countMap = {};
+        data.forEach(({ votes }) => {
+          const vote = votes[taskIndex];
+          if (vote) countMap[vote] = (countMap[vote] || 0) + 1;
+        });
+        return Object.entries(countMap)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3);
+      });
+
+      setResults(voteCounts);
+    };
+
+    fetchVotes();
   }, []);
 
-  async function fetchResults() {
-    const { data, error } = await supabase.from("votes").select("votes");
-    if (error) console.error(error);
-    else setResults(data.map((entry) => entry.votes));
-  }
-
-  function getTaskWinner(taskIndex) {
-    const tally = {};
-    results.forEach((vote) => {
-      const name = vote[taskIndex];
-      if (name) tally[name] = (tally[name] || 0) + 1;
-    });
-    const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
-    return sorted.length ? `${sorted[0][0]} (${sorted[0][1]} votes)` : "No votes yet";
-  }
-
-  const handleClearVotes = async () => {
-    const confirm = window.confirm("Are you sure you want to clear all votes?");
-    if (confirm) {
-      await supabase.from("votes").delete().neq("id", 0);
+  const clearVotes = async () => {
+    const { error } = await supabase.from("votes").delete().neq("id", 0);
+    if (error) {
+      console.error("Error clearing votes:", error);
+    } else {
       alert("All votes cleared.");
-      fetchResults();
+      setResults([]);
     }
   };
 
+  const handleAdminLogin = () => {
+    if (password === "avatar22") setAdminMode(true);
+    else alert("Incorrect password");
+  };
+
   return (
-    <div className="min-h-screen bg-stripe text-black flex flex-col items-center p-6">
-      <img src={logo} alt="Logo" className="w-48 mb-8" />
-
-      {!admin ? (
-        <div className="mb-10">
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            className="px-4 py-2 rounded border border-black mr-2"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-          />
-          <button
-            onClick={() => {
-              if (passwordInput === "avatar22") setAdmin(true);
-              else alert("Incorrect password.");
-            }}
-            className="bg-black text-white px-4 py-2 rounded"
+    <div className="bg-stripe min-h-screen text-black flex flex-col items-center justify-center px-6 py-12">
+      <img src={logo} alt="Logo" className="w-56 sm:w-72 mb-10" />
+      <div className="bg-white border-4 border-black rounded-2xl p-6 max-w-2xl w-full text-center shadow-xl">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTaskIndex}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            transition={{ duration: 0.4 }}
           >
-            Enter Admin Mode
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={handleClearVotes}
-          className="mb-10 bg-red-500 text-white px-4 py-2 rounded font-bold"
-        >
-          CLEAR ALL VOTES
-        </button>
-      )}
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentTask}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white border-4 border-black rounded-xl p-6 shadow-xl max-w-2xl text-center"
-        >
-          <h2 className="text-2xl md:text-3xl font-bold uppercase text-yellow-600 mb-4">
-            Task {currentTask + 1}
-          </h2>
-          <p className="text-lg md:text-xl font-semibold mb-4">
-            {tasks[currentTask]}
-          </p>
-          <p className="text-2xl md:text-3xl font-extrabold text-black">
-            Winner: {getTaskWinner(currentTask)}
-          </p>
-
-          <div className="flex justify-between mt-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 uppercase">
+              TASK {currentTaskIndex + 1}
+            </h2>
+            <p className="text-lg md:text-xl mb-6">
+              {tasks[currentTaskIndex]}
+            </p>
+            <ol className="text-left space-y-3 text-xl font-semibold">
+              {results[currentTaskIndex]?.map(([name, count], i) => (
+                <li key={i} className="bg-yellow-100 border-2 border-black p-3 rounded-xl">
+                  {i + 1}. {name} — {count} vote{count !== 1 ? "s" : ""}
+                </li>
+              ))}
+            </ol>
+          </motion.div>
+        </AnimatePresence>
+        <div className="mt-8 flex justify-center space-x-4">
+          {currentTaskIndex > 0 && (
             <button
-              onClick={() => setCurrentTask((prev) => Math.max(0, prev - 1))}
-              className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
-              disabled={currentTask === 0}
+              onClick={() => setCurrentTaskIndex((i) => i - 1)}
+              className="bg-black text-white px-5 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition"
             >
-              Previous
+              PREV
             </button>
+          )}
+          {currentTaskIndex < tasks.length - 1 ? (
             <button
-              onClick={() => setCurrentTask((prev) => Math.min(tasks.length - 1, prev + 1))}
-              className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
-              disabled={currentTask === tasks.length - 1}
+              onClick={() => setCurrentTaskIndex((i) => i + 1)}
+              className="bg-black text-white px-5 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition"
             >
-              Next
+              NEXT
+            </button>
+          ) : (
+            <a
+              href="/final"
+              className="bg-black text-white px-5 py-2 rounded-full hover:bg-yellow-400 hover:text-black transition"
+            >
+              SEE FINAL RESULTS
+            </a>
+          )}
+        </div>
+        {!adminMode && (
+          <div className="mt-6 text-sm text-gray-600">
+            <input
+              type="password"
+              placeholder="Admin Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="px-3 py-1 rounded border border-gray-400"
+            />
+            <button
+              onClick={handleAdminLogin}
+              className="ml-2 px-3 py-1 bg-black text-white rounded hover:bg-yellow-400 hover:text-black"
+            >
+              Login
             </button>
           </div>
-        </motion.div>
-      </AnimatePresence>
+        )}
+        {adminMode && (
+          <div className="mt-6">
+            <button
+              onClick={clearVotes}
+              className="bg-red-600 text-white px-5 py-2 rounded-full hover:bg-red-400 transition"
+            >
+              Clear All Votes
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default ResultsPage;

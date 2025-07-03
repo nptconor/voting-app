@@ -14,7 +14,7 @@ const tasks = [
   "Find and purchase the 'best' piece of art for under $20",
 ];
 
-const ADMIN_SECRET = "your_secret_here";
+const ADMIN_SECRET = 'avatar22';
 
 function tallyVotes(allVotes) {
   const taskTallies = Array(tasks.length).fill(null).map(() => ({}));

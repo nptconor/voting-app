@@ -1,6 +1,8 @@
 // VotingPage.jsx
 import React, { useState } from "react";
 import "./index.css";
+import logo from "./logo.png";
+import { supabase } from "./supabase";
 
 const tasks = [
   "Wear the best 80s movie character costume",
@@ -28,12 +30,23 @@ function VotingPage() {
     setVotes((prev) => ({ ...prev, [currentTask]: participant }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentTask < tasks.length - 1) {
       setCurrentTask((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       const storedVotes = JSON.parse(localStorage.getItem("allVotes")) || [];
       localStorage.setItem("allVotes", JSON.stringify([...storedVotes, votes]));
+
+      try {
+        const { error } = await supabase.from("votes").insert({
+          voter_id: crypto.randomUUID(),
+          votes,
+        });
+        if (error) throw error;
+      } catch (err) {
+        console.error("Error submitting vote:", err);
+      }
 
       alert("Thanks for voting! Please notify the host that you're done.");
     }
@@ -42,7 +55,9 @@ function VotingPage() {
   return (
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
-      <h1 className="text-4xl font-bold text-center mb-6 text-white text-stroke">CHALLENGE VOTING</h1>
+      <div className="flex justify-center mb-6">
+        <img src={logo} alt="Logo" className="h-20" />
+      </div>
       <div className="bg-white p-6 rounded shadow-xl relative z-10">
         <h2 className="text-2xl font-bold mb-4 text-white text-stroke text-center">
           {tasks[currentTask].toUpperCase()}

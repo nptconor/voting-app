@@ -1,8 +1,8 @@
 // ResultsPage.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import logo from "./logo.png";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 
 const tasks = [
   "Wear the best 80s movie character costume",
@@ -13,133 +13,110 @@ const tasks = [
   "Find and purchase the 'best' piece of art for under $20",
 ];
 
-const ADMIN_PASSWORD = "avatar22"; // change this as needed
-
 function ResultsPage() {
-  const [votesData, setVotesData] = useState([]);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [clearing, setClearing] = useState(false);
-  const navigate = useNavigate();
+  const [results, setResults] = useState([]);
+  const [currentTask, setCurrentTask] = useState(0);
+  const [admin, setAdmin] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
 
   useEffect(() => {
-    async function fetchVotes() {
-      const { data, error } = await supabase.from("votes").select("*");
-      if (!error) setVotesData(data || []);
-    }
-    fetchVotes();
+    fetchResults();
   }, []);
 
-  const calculateTopThree = (taskIndex) => {
+  async function fetchResults() {
+    const { data, error } = await supabase.from("votes").select("votes");
+    if (error) console.error(error);
+    else setResults(data.map((entry) => entry.votes));
+  }
+
+  function getTaskWinner(taskIndex) {
     const tally = {};
-    votesData.forEach((vote) => {
-      const selection = vote.votes[taskIndex];
-      if (selection) {
-        tally[selection] = (tally[selection] || 0) + 1;
-      }
+    results.forEach((vote) => {
+      const name = vote[taskIndex];
+      if (name) tally[name] = (tally[name] || 0) + 1;
     });
-
-    const sorted = Object.entries(tally)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-
-    return sorted;
-  };
-
-  const handleNextTask = () => {
-    setCurrentTaskIndex((prev) => prev + 1);
-  };
+    const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+    return sorted.length ? `${sorted[0][0]} (${sorted[0][1]} votes)` : "No votes yet";
+  }
 
   const handleClearVotes = async () => {
-    const confirmClear = window.confirm("Are you sure you want to delete all votes?");
-    if (!confirmClear) return;
-
-    setClearing(true);
-    const { error } = await supabase.from("votes").delete().neq("voter_id", "");
-    setClearing(false);
-
-    if (error) {
-      alert("Failed to clear votes.");
-    } else {
-      alert("Votes cleared.");
-      window.location.reload();
+    const confirm = window.confirm("Are you sure you want to clear all votes?");
+    if (confirm) {
+      await supabase.from("votes").delete().neq("id", 0);
+      alert("All votes cleared.");
+      fetchResults();
     }
   };
-
-  const handleAdminLogin = () => {
-    const input = prompt("Enter admin password:");
-    if (input === ADMIN_PASSWORD) {
-      setAdminUnlocked(true);
-    } else {
-      alert("Incorrect password.");
-    }
-  };
-
-  const topThree = calculateTopThree(currentTaskIndex);
 
   return (
-    <div className="min-h-screen bg-stripe text-white flex flex-col items-center justify-center px-6 py-10 font-bold text-center">
+    <div className="min-h-screen bg-stripe text-black flex flex-col items-center p-6">
+      <img src={logo} alt="Logo" className="w-48 mb-8" />
+
+      {!admin ? (
+        <div className="mb-10">
+          <input
+            type="password"
+            placeholder="Enter admin password"
+            className="px-4 py-2 rounded border border-black mr-2"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+          />
+          <button
+            onClick={() => {
+              if (passwordInput === "avatar22") setAdmin(true);
+              else alert("Incorrect password.");
+            }}
+            className="bg-black text-white px-4 py-2 rounded"
+          >
+            Enter Admin Mode
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={handleClearVotes}
+          className="mb-10 bg-red-500 text-white px-4 py-2 rounded font-bold"
+        >
+          CLEAR ALL VOTES
+        </button>
+      )}
+
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentTaskIndex}
+          key={currentTask}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
+          exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4 }}
-          className="bg-black bg-opacity-80 p-6 rounded-lg w-full max-w-xl"
+          className="bg-white border-4 border-black rounded-xl p-6 shadow-xl max-w-2xl text-center"
         >
-          <h2 className="text-2xl sm:text-3xl mb-6 uppercase">
-            Task {currentTaskIndex + 1}: {tasks[currentTaskIndex]}
+          <h2 className="text-2xl md:text-3xl font-bold uppercase text-yellow-600 mb-4">
+            Task {currentTask + 1}
           </h2>
+          <p className="text-lg md:text-xl font-semibold mb-4">
+            {tasks[currentTask]}
+          </p>
+          <p className="text-2xl md:text-3xl font-extrabold text-black">
+            Winner: {getTaskWinner(currentTask)}
+          </p>
 
-          {topThree.length === 0 ? (
-            <p className="text-lg">No votes yet.</p>
-          ) : (
-            <ul className="text-yellow-300 text-xl space-y-2">
-              {topThree.map(([name, count], index) => (
-                <li key={index}>
-                  {index + 1}. {name} – {count} vote{count !== 1 ? "s" : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {currentTaskIndex < tasks.length - 1 ? (
+          <div className="flex justify-between mt-6">
             <button
-              onClick={handleNextTask}
-              className="mt-6 bg-yellow-400 text-black py-2 px-6 rounded-full hover:bg-white transition font-bold"
+              onClick={() => setCurrentTask((prev) => Math.max(0, prev - 1))}
+              className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled={currentTask === 0}
             >
-              Show Next Task
+              Previous
             </button>
-          ) : (
             <button
-              onClick={() => navigate("/final")}
-              className="mt-6 bg-white text-black py-2 px-6 rounded-full hover:bg-yellow-400 transition font-bold"
+              onClick={() => setCurrentTask((prev) => Math.min(tasks.length - 1, prev + 1))}
+              className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled={currentTask === tasks.length - 1}
             >
-              View Final Results
+              Next
             </button>
-          )}
+          </div>
         </motion.div>
       </AnimatePresence>
-
-      <div className="mt-8">
-        {!adminUnlocked ? (
-          <button
-            onClick={handleAdminLogin}
-            className="text-sm underline text-white hover:text-yellow-300"
-          >
-            Admin? Click to log in
-          </button>
-        ) : (
-          <button
-            onClick={handleClearVotes}
-            className="text-sm underline text-red-300 hover:text-red-500"
-            disabled={clearing}
-          >
-            {clearing ? "Clearing votes..." : "Clear All Votes"}
-          </button>
-        )}
-      </div>
     </div>
   );
 }

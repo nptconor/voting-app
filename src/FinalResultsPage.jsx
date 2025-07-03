@@ -1,63 +1,41 @@
-// FinalResultsPage.jsx
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import logo from "./logo.png";
 
 function FinalResultsPage() {
-  const [overallWinner, setOverallWinner] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [winner, setWinner] = useState(null);
 
   useEffect(() => {
-    async function fetchVotes() {
-      const { data: votesData, error } = await supabase.from("votes").select("*");
+    async function calculateOverallWinner() {
+      const { data, error } = await supabase.from("votes").select("votes");
       if (error) {
         console.error("Error fetching votes:", error);
         return;
       }
 
-      const scoreMap = {};
-
-      votesData.forEach((voteEntry) => {
-        const voteObj = voteEntry.votes;
-        for (const taskIndex in voteObj) {
-          const participant = voteObj[taskIndex];
-          if (!scoreMap[participant]) {
-            scoreMap[participant] = 0;
-          }
-          scoreMap[participant] += 1;
-        }
+      const scores = {};
+      data.forEach(({ votes }) => {
+        Object.values(votes).forEach((name) => {
+          scores[name] = (scores[name] || 0) + 1;
+        });
       });
 
-      let topScorer = "";
-      let topScore = -1;
-
-      for (const [participant, score] of Object.entries(scoreMap)) {
-        if (score > topScore) {
-          topScore = score;
-          topScorer = participant;
-        }
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      if (sorted.length) {
+        setWinner(sorted[0][0]);
       }
-
-      setOverallWinner(topScorer);
-      setLoading(false);
     }
 
-    fetchVotes();
+    calculateOverallWinner();
   }, []);
 
   return (
-    <div className="relative p-8 max-w-3xl mx-auto min-h-screen font-special text-black text-center">
-      <div className="bg-stripe fixed inset-0 -z-10"></div>
-      <div className="bg-white p-10 rounded-xl shadow-2xl">
-        <h1 className="text-4xl font-bold mb-6 text-stroke text-white">
-          OVERALL WINNER
-        </h1>
-        {loading ? (
-          <p className="text-black text-xl">Loading...</p>
-        ) : (
-          <p className="text-5xl font-extrabold uppercase text-yellow-600">
-            🎉 {overallWinner} 🎉
-          </p>
-        )}
+    <div className="min-h-screen bg-stripe flex flex-col justify-center items-center text-white p-6 text-center">
+      <img src={logo} alt="Logo" className="w-60 mb-10" />
+      <h1 className="text-4xl md:text-5xl font-bold mb-4">OVERALL WINNER</h1>
+      <div className="text-3xl md:text-4xl bg-white text-black px-10 py-4 rounded-lg border-4 border-black font-bold">
+        {winner || "Loading..."}
       </div>
     </div>
   );

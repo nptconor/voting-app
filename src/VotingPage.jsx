@@ -1,5 +1,6 @@
 // VotingPage.jsx
 import React, { useState, useEffect } from "react";
+import { motion } from 'framer-motion';
 import "./index.css";
 import logo from "./logo.png";
 import { supabase } from "./supabase";
@@ -88,7 +89,7 @@ function VotingPage() {
         <img src={logo} alt="Logo" className="h-44 md:h-56" />
       </div>
       <div className="bg-white p-6 rounded shadow-xl relative z-10">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-black">
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-black uppercase">
           TASK: <span className="text-yellow-600">{tasks[currentTask]}</span>
         </h2>
         <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-32">

@@ -59,12 +59,12 @@ function VotingPage() {
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
       <div className="flex justify-center mb-6">
-        <img src={logo} alt="Logo" className="h-28 md:h-36" />
-      </div>
-      <div className="bg-white p-6 rounded shadow-xl relative z-10">
-        <h2 className="text-2xl font-bold mb-4 text-white text-stroke text-center">
-          {tasks[currentTask].toUpperCase()}
-        </h2>
+  <img src={logo} alt="Logo" className="h-40 md:h-52" />
+</div>
+<div className="bg-white p-6 rounded shadow-xl relative z-10">
+  <h2 className="text-3xl md:text-4xl font-extrabold mb-6 text-center text-black drop-shadow-sm tracking-wide">
+    {tasks[currentTask].toUpperCase()}
+  </h2>
         <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-20">
           {participantsPerTask[currentTask].map((participant) => (
             <div

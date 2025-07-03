@@ -1,44 +1,48 @@
-
+// FinalResultsPage.jsx
 import React, { useEffect, useState } from "react";
-import { supabase } from "./supabase";
 import logo from "./logo.png";
+import { motion } from "framer-motion";
+import Confetti from "react-confetti";
+import useWindowSize from "react-use/lib/useWindowSize";
 
-function FinalResultsPage() {
-  const [winner, setWinner] = useState(null);
+const FinalResultsPage = ({ winner }) => {
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(true);
 
   useEffect(() => {
-    async function calculateOverallWinner() {
-      const { data, error } = await supabase.from("votes").select("votes");
-      if (error) {
-        console.error("Error fetching votes:", error);
-        return;
-      }
-
-      const scores = {};
-      data.forEach(({ votes }) => {
-        Object.values(votes).forEach((name) => {
-          scores[name] = (scores[name] || 0) + 1;
-        });
-      });
-
-      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-      if (sorted.length) {
-        setWinner(sorted[0][0]);
-      }
-    }
-
-    calculateOverallWinner();
+    const timer = setTimeout(() => setShowConfetti(false), 8000); // stop after 8 seconds
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="min-h-screen bg-stripe flex flex-col justify-center items-center text-white p-6 text-center">
-      <img src={logo} alt="Logo" className="w-60 mb-10" />
-      <h1 className="text-4xl md:text-5xl font-bold mb-4">OVERALL WINNER</h1>
-      <div className="text-3xl md:text-4xl bg-white text-black px-10 py-4 rounded-lg border-4 border-black font-bold">
-        {winner || "Loading..."}
-      </div>
+    <div className="bg-stripe min-h-screen flex flex-col items-center justify-center text-center px-6">
+      {showConfetti && <Confetti width={width} height={height} numberOfPieces={500} />}
+      <motion.img
+        src={logo}
+        alt="Logo"
+        initial={{ opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1 }}
+        className="w-72 md:w-96 mb-10"
+      />
+      <motion.h1
+        className="text-5xl md:text-6xl font-bold text-white tracking-wide drop-shadow-lg"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.5 }}
+      >
+        OVERALL WINNER
+      </motion.h1>
+      <motion.p
+        className="text-4xl md:text-5xl font-extrabold text-yellow-300 mt-6 drop-shadow-md"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 1 }}
+      >
+        {winner}
+      </motion.p>
     </div>
   );
-}
+};
 
 export default FinalResultsPage;

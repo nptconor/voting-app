@@ -19,44 +19,42 @@ const FinalResultsPage = () => {
 
   useEffect(() => {
     const calculateWinner = async () => {
-      try {
-        const { data: votesData, error } = await supabase.from("votes").select("votes");
-        if (error || !votesData) {
-          console.error("Error fetching votes:", error);
-          setLoading(false);
-          return;
-        }
+      const { data, error } = await supabase.from("votes").select("votes");
 
-        const taskWinners = {};
-
-        votesData.forEach(({ votes }) => {
-          Object.entries(votes).forEach(([taskIndex, participant]) => {
-            if (!taskWinners[taskIndex]) taskWinners[taskIndex] = {};
-            taskWinners[taskIndex][participant] = (taskWinners[taskIndex][participant] || 0) + 1;
-          });
-        });
-
-        const winnersByTask = Object.values(taskWinners).map((taskVoteMap) => {
-          return Object.entries(taskVoteMap).reduce((top, [name, count]) => {
-            return count > top.count ? { name, count } : top;
-          }, { name: null, count: 0 }).name;
-        });
-
-        const overallCounts = {};
-        winnersByTask.forEach((winner) => {
-          overallCounts[winner] = (overallCounts[winner] || 0) + 1;
-        });
-
-        const topWinner = Object.entries(overallCounts).reduce((top, [name, count]) => {
-          return count > top.count ? { name, count } : top;
-        }, { name: null, count: 0 }).name;
-
-        setOverallWinner(topWinner);
-      } catch (err) {
-        console.error("Error calculating winner:", err);
-      } finally {
+      if (error) {
+        console.error("Failed to fetch votes:", error);
         setLoading(false);
+        return;
       }
+
+      const taskVoteCounts = {};
+
+      data.forEach(({ votes }) => {
+        Object.entries(votes).forEach(([taskIdx, participant]) => {
+          if (!taskVoteCounts[taskIdx]) taskVoteCounts[taskIdx] = {};
+          taskVoteCounts[taskIdx][participant] = (taskVoteCounts[taskIdx][participant] || 0) + 1;
+        });
+      });
+
+      const taskWinners = Object.values(taskVoteCounts).map((voteMap) => {
+        return Object.entries(voteMap).reduce(
+          (top, [name, count]) => (count > top.count ? { name, count } : top),
+          { name: "", count: 0 }
+        ).name;
+      });
+
+      const finalCounts = {};
+      taskWinners.forEach((winner) => {
+        finalCounts[winner] = (finalCounts[winner] || 0) + 1;
+      });
+
+      const topWinner = Object.entries(finalCounts).reduce(
+        (top, [name, count]) => (count > top.count ? { name, count } : top),
+        { name: "", count: 0 }
+      ).name;
+
+      setOverallWinner(topWinner);
+      setLoading(false);
     };
 
     calculateWinner();
@@ -64,7 +62,7 @@ const FinalResultsPage = () => {
 
   return (
     <div className="bg-stripe min-h-screen flex flex-col items-center justify-center text-center px-6">
-      {showConfetti && <Confetti width={width} height={height} numberOfPieces={20000} />}
+      {showConfetti && <Confetti width={width} height={height} numberOfPieces={7000} />}
       <motion.img
         src={logo}
         alt="Logo"
@@ -81,10 +79,9 @@ const FinalResultsPage = () => {
       >
         OVERALL WINNER
       </motion.h1>
-
       {loading ? (
-        <p className="text-2xl mt-4 text-white">Loading results...</p>
-      ) : overallWinner ? (
+        <p className="text-xl text-white mt-4">Calculating votes...</p>
+      ) : (
         <motion.p
           className="text-4xl md:text-5xl font-extrabold text-yellow-300 mt-6 drop-shadow-md"
           initial={{ opacity: 0, y: 40 }}
@@ -93,8 +90,6 @@ const FinalResultsPage = () => {
         >
           {overallWinner}
         </motion.p>
-      ) : (
-        <p className="text-xl mt-6 text-white">No winner data available.</p>
       )}
     </div>
   );

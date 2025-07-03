@@ -56,7 +56,7 @@ function VotingPage() {
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
       <div className="flex justify-center mb-6">
-  <img src={logo} alt="Logo" className="h-42 md:h-50" />
+  <img src={logo} alt="Logo" className="h-40 md:h-48" />
 </div>
       <div className="bg-white p-6 rounded shadow-xl relative z-10">
       <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center bg-black text-white py-2 px-4 rounded">

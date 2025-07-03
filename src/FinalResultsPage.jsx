@@ -6,19 +6,10 @@ import Confetti from "react-confetti";
 import useWindowSize from "react-use/lib/useWindowSize";
 import { supabase } from "./supabase";
 
-const tasks = [
-  "Wear the best 80s movie character costume",
-  "Take the best celebrity selfie",
-  "Get the standee to the coolest location",
-  "Learn and perform the best party trick",
-  "Create the coolest voicemail greeting",
-  "Find and purchase the 'best' piece of art for under $20",
-];
-
 const FinalResultsPage = () => {
   const { width, height } = useWindowSize();
+  const [overallWinner, setOverallWinner] = useState(null);
   const [showConfetti, setShowConfetti] = useState(true);
-  const [winner, setWinner] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => setShowConfetti(false), 20000);
@@ -26,55 +17,46 @@ const FinalResultsPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchVotes = async () => {
-      const { data: votesData, error } = await supabase.from("votes").select("*");
-      if (error) {
+    const calculateWinner = async () => {
+      const { data: votesData, error } = await supabase.from("votes").select("votes");
+      if (error || !votesData) {
         console.error("Error fetching votes:", error);
         return;
       }
 
-      const taskWinners = computeTaskWinners(votesData);
-      const overall = computeOverallWinner(taskWinners);
-      setWinner(overall);
+      const taskWinners = {};
+
+      // Tally votes per task
+      votesData.forEach(({ votes }) => {
+        Object.entries(votes).forEach(([taskIndex, participant]) => {
+          if (!taskWinners[taskIndex]) taskWinners[taskIndex] = {};
+          taskWinners[taskIndex][participant] = (taskWinners[taskIndex][participant] || 0) + 1;
+        });
+      });
+
+      // Determine winner for each task
+      const winnersByTask = Object.values(taskWinners).map((taskVoteMap) => {
+        return Object.entries(taskVoteMap).reduce((top, [name, count]) => {
+          return count > top.count ? { name, count } : top;
+        }, { name: null, count: 0 }).name;
+      });
+
+      // Count wins
+      const overallCounts = {};
+      winnersByTask.forEach((winner) => {
+        overallCounts[winner] = (overallCounts[winner] || 0) + 1;
+      });
+
+      // Determine overall winner
+      const topWinner = Object.entries(overallCounts).reduce((top, [name, count]) => {
+        return count > top.count ? { name, count } : top;
+      }, { name: null, count: 0 }).name;
+
+      setOverallWinner(topWinner);
     };
 
-    fetchVotes();
+    calculateWinner();
   }, []);
-
-  const computeTaskWinners = (votesData) => {
-    const taskVoteTallies = Array(tasks.length)
-      .fill(null)
-      .map(() => ({}));
-
-    votesData.forEach((voteRecord) => {
-      const voteObj = voteRecord.votes;
-      Object.entries(voteObj).forEach(([taskIdx, participant]) => {
-        if (!taskVoteTallies[taskIdx][participant]) {
-          taskVoteTallies[taskIdx][participant] = 0;
-        }
-        taskVoteTallies[taskIdx][participant] += 1;
-      });
-    });
-
-    return taskVoteTallies.map((tally) => {
-      const entries = Object.entries(tally);
-      if (entries.length === 0) return null;
-      entries.sort((a, b) => b[1] - a[1]);
-      return entries[0][0];
-    });
-  };
-
-  const computeOverallWinner = (taskWinners) => {
-    const winCounts = {};
-
-    taskWinners.forEach((winner) => {
-      if (!winner) return;
-      winCounts[winner] = (winCounts[winner] || 0) + 1;
-    });
-
-    const sorted = Object.entries(winCounts).sort((a, b) => b[1] - a[1]);
-    return sorted[0]?.[0] || "No winner";
-  };
 
   return (
     <div className="bg-stripe min-h-screen flex flex-col items-center justify-center text-center px-6">
@@ -95,14 +77,14 @@ const FinalResultsPage = () => {
       >
         OVERALL WINNER
       </motion.h1>
-      {winner && (
+      {overallWinner && (
         <motion.p
           className="text-4xl md:text-5xl font-extrabold text-yellow-300 mt-6 drop-shadow-md"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          {winner}
+          {overallWinner}
         </motion.p>
       )}
     </div>

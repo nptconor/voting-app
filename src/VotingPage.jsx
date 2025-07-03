@@ -26,6 +26,7 @@ function VotingPage() {
   const [currentTask, setCurrentTask] = useState(0);
   const [votes, setVotes] = useState({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [submittedMessage, setSubmittedMessage] = useState(false);
 
   useEffect(() => {
     const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
@@ -71,14 +72,22 @@ function VotingPage() {
         localStorage.removeItem("currentTask");
         localStorage.setItem("hasSubmitted", "true");
         setHasSubmitted(true);
-
-        alert("Thanks for voting! Please notify the host that you're done.");
+        setSubmittedMessage(true);
       } catch (err) {
         console.error("Error submitting vote:", err);
         alert("There was an error submitting your vote. Please try again.");
       }
     }
   };
+
+  if (submittedMessage) {
+    return (
+      <div className="bg-stripe min-h-screen flex flex-col items-center justify-center text-center p-6">
+        <img src={logo} alt="Logo" className="w-60 mb-6" />
+        <h1 className="text-3xl font-bold text-white">THANKS FOR YOUR SUBMISSION!</h1>
+      </div>
+    );
+  }
 
   return (
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">

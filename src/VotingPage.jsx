@@ -25,12 +25,16 @@ const participantsPerTask = [
 function VotingPage() {
   const [currentTask, setCurrentTask] = useState(0);
   const [votes, setVotes] = useState({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     const savedVotes = JSON.parse(localStorage.getItem("votes")) || {};
     const savedTask = parseInt(localStorage.getItem("currentTask")) || 0;
+    const submitted = localStorage.getItem("hasSubmitted") === "true";
+
     setVotes(savedVotes);
-    setCurrentTask(savedTask);
+    setCurrentTask(submitted ? tasks.length - 1 : savedTask);
+    setHasSubmitted(submitted);
   }, []);
 
   useEffect(() => {
@@ -45,6 +49,11 @@ function VotingPage() {
   };
 
   const handleNext = async () => {
+    if (hasSubmitted) {
+      alert("You’ve already submitted your votes.");
+      return;
+    }
+
     if (currentTask < tasks.length - 1) {
       setCurrentTask((prev) => {
         const next = prev + 1;
@@ -61,6 +70,8 @@ function VotingPage() {
 
         localStorage.removeItem("votes");
         localStorage.removeItem("currentTask");
+        localStorage.setItem("hasSubmitted", "true");
+        setHasSubmitted(true);
 
         alert("Thanks for voting! Please notify the host that you're done.");
       } catch (err) {
@@ -74,13 +85,13 @@ function VotingPage() {
     <div className="relative p-4 max-w-3xl mx-auto min-h-screen font-special text-black">
       <div className="bg-stripe fixed inset-0 -z-10"></div>
       <div className="flex justify-center mb-6">
-        <img src={logo} alt="Logo" className="h-36 md:h-44" />
+        <img src={logo} alt="Logo" className="h-44 md:h-56" />
       </div>
       <div className="bg-white p-6 rounded shadow-xl relative z-10">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white text-stroke text-center">
-          {tasks[currentTask].toUpperCase()}
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-black">
+          TASK: <span className="text-yellow-600">{tasks[currentTask]}</span>
         </h2>
-        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-24">
+        <div className="grid grid-cols-1 gap-4 max-w-lg mx-auto pb-32">
           {participantsPerTask[currentTask].map((participant) => (
             <div
               key={participant}
@@ -97,10 +108,10 @@ function VotingPage() {
           ))}
         </div>
       </div>
-      <div className="text-center mt-4">
+      <div className="text-center mt-8">
         <button
           onClick={handleNext}
-          disabled={!votes[currentTask]}
+          disabled={!votes[currentTask] || hasSubmitted}
           className="bg-white text-black px-6 py-3 rounded font-bold uppercase shadow"
         >
           {currentTask < tasks.length - 1 ? "VOTE & NEXT TASK" : "SUBMIT"}

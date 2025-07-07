@@ -14,12 +14,12 @@ const tasks = [
 ];
 
 const participantsPerTask = [
-  ["Feinstein", "Grasek", "Dowski", "Bonaparte", "C Clark", "T Clark", "Nuzzi", "KJ Clark", "Keane", "Bica", "B Clark/Rush", "Gelabert", "P Clark", "Pritchard"],
-  ["Nuzzi", "T Clark", "Bica", "Bonaparte", "Keane", "Pritchard", "KJ Clark", "Feinstein", "P Clark", "B Clark/Rush", "C Clark", "Gelabert", "Grasek", "Dowski"],
-  ["C Clark", "Keane", "Bonaparte", "Feinstein", "Gelabert", "P Clark", "Grasek", "Pritchard", "KJ Clark", "Nuzzi", "B Clark/Rush", "Dowski", "Bica", "T Clark"],
-  ["Keane", "Grasek", "Gelabert", "Bonaparte", "P Clark", "Dowski", "B Clark/Rush", "Pritchard", "Nuzzi", "C Clark", "Feinstein", "KJ Clark", "T Clark", "Bica"],
-  ["Feinstein", "Keane", "T Clark", "Bica", "Gelabert", "C Clark", "Grasek", "Dowski", "Bonaparte", "Nuzzi", "P Clark", "Pritchard", "B Clark/Rush", "KJ Clark"],
-  ["B Clark/Rush", "Keane", "P Clark", "Dowski", "Grasek", "Bonaparte", "Feinstein", "Gelabert", "T Clark", "C Clark", "Bica", "Nuzzi", "KJ Clark", "Pritchard"],
+  ["Feinsteins", "McDonalds", "Jay Dowski", "Bones", "Conor Clark", "Terry Clark", "Nuzzis", "Kelly & Jim Clark", "Konall Keane", "Joey Bica", "Bridget & Sara", "Gelaberts", "PJ Clark", "Ian Pritchard"],
+  ["Nuzzis", "Terry Clark", "Joey Bica", "Bones", "Konall Keane", "Ian Pritchard", "Kelly & Jim Clark", "Feinsteins", "PJ Clark", "Bridget & Sara", "Conor Clark", "Gelaberts", "McDonalds", "Jay Dowski"],
+  ["Conor Clark", "Konall Keane", "Bones", "Feinsteins", "Gelaberts", "PJ Clark", "McDonalds", "Ian Pritchard", "Kelly & Jim Clark", "Nuzzis", "Bridget & Sara", "Jay Dowski", "Joey Bica", "Terry Clark"],
+  ["Konall Keane", "McDonalds", "Gelaberts", "Bones", "PJ Clark", "Jay Dowski", "Bridget & Sara", "Ian Pritchard", "Nuzzis", "Conor Clark", "Feinsteins", "Kelly & Jim Clark", "Terry Clark", "Joey Bica"],
+  ["Feinsteins", "Konall Keane", "Terry Clark", "Joey Bica", "Gelaberts", "Conor Clark", "McDonalds", "Jay Dowski", "Bones", "Nuzzis", "PJ Clark", "Ian Pritchard", "Bridget & Sara", "Kelly & Jim Clark"],
+  ["Bridget & Sara", "Konall Keane", "PJ Clark", "Jay Dowski", "McDonalds", "Bones", "Feinsteins", "Gelaberts", "Terry Clark", "Conor Clark", "Joey Bica", "Nuzzis", "Kelly & Jim Clark", "Ian Pritchard"],
 ];
 
 function VotingPage() {
